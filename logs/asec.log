@@ -1,1 +1,1 @@
-
+echo "$(date '+%F %T') [INFO] asec started" >> logs/asec.log
