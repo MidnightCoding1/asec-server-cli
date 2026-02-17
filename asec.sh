@@ -6,6 +6,7 @@ ASEC_ROOT="$(cd "$(dirname "$0")" && pwd)"
 . "$ASEC_ROOT/core/version.sh"
 . "$ASEC_ROOT/core/help.sh"
 . "$ASEC_ROOT/core/system.sh"
+. "$ASEC_ROOT/core/monitor.sh"
 
 CMD="$1"
 
@@ -18,6 +19,9 @@ case "$CMD" in
     ;;
   "system")
     asec_system_status
+    ;;
+  "monitor")
+    asec_monitor
     ;;
   *)
     echo "[asec] unknown command: $CMD"
