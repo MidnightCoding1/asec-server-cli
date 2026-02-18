@@ -1,4 +1,7 @@
-LOCAL_ROOT="data/local"
+# absolute project root
+ASEC_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+LOCAL_ROOT="$ASEC_ROOT/data/local"
 SITE_ROOT="$LOCAL_ROOT/sites"
 LOCAL_DB="$LOCAL_ROOT/servers.db"
 
@@ -63,9 +66,14 @@ EOF
   echo "Starting local web server..."
   echo
 
-  cd "$SITE_DIR" || return
-  python3 -m http.server "$PORT" >/dev/null 2>&1 &
-  PID=$!
+  (
+    cd "$SITE_DIR" || exit 1
+    python3 -m http.server "$PORT" >/dev/null 2>&1 &
+    echo $! > "$LOCAL_ROOT/.last_pid"
+  )
+
+  PID=$(cat "$LOCAL_ROOT/.last_pid")
+  rm -f "$LOCAL_ROOT/.last_pid"
 
   echo "$NAME|$PORT|$SITE_DIR|$PID|$DESC" >> "$LOCAL_DB"
 
