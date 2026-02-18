@@ -2,9 +2,13 @@ LOCAL_ROOT="data/local"
 SITE_ROOT="$LOCAL_ROOT/sites"
 LOCAL_DB="$LOCAL_ROOT/servers.db"
 
-asec_local_start() {
+asec_local_init() {
   mkdir -p "$SITE_ROOT"
   touch "$LOCAL_DB"
+}
+
+asec_local_start() {
+  asec_local_init
 
   echo
   echo "Create local server"
@@ -37,10 +41,11 @@ asec_local_start() {
   printf "Description (optional): "
   read -r DESC
 
-  # create site directory
+  echo
+  echo "Preparing site directory..."
   mkdir -p "$SITE_DIR"
 
-  # create default index.html
+  # default index.html
   cat > "$SITE_DIR/index.html" <<EOF
 <!DOCTYPE html>
 <html>
@@ -55,7 +60,6 @@ asec_local_start() {
 </html>
 EOF
 
-  echo
   echo "Starting local web server..."
   echo
 
@@ -76,6 +80,8 @@ EOF
 }
 
 asec_local_list() {
+  asec_local_init
+
   if [ ! -s "$LOCAL_DB" ]; then
     echo
     echo "No local servers running"
