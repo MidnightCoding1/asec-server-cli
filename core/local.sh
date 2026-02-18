@@ -1,0 +1,101 @@
+LOCAL_ROOT="data/local"
+SITE_ROOT="$LOCAL_ROOT/sites"
+LOCAL_DB="$LOCAL_ROOT/servers.db"
+
+asec_local_start() {
+  mkdir -p "$SITE_ROOT"
+  touch "$LOCAL_DB"
+
+  echo
+  echo "Create local server"
+  echo "-------------------"
+
+  printf "Name (identifier): "
+  read -r NAME
+
+  if [ -z "$NAME" ]; then
+    echo "aborted: name required"
+    return
+  fi
+
+  if grep -q "^$NAME|" "$LOCAL_DB"; then
+    echo "aborted: server with this name already exists"
+    return
+  fi
+
+  SITE_DIR="$SITE_ROOT/$NAME"
+
+  if [ -d "$SITE_DIR" ]; then
+    echo "aborted: site directory already exists"
+    return
+  fi
+
+  printf "Port (default 8000): "
+  read -r PORT
+  PORT=${PORT:-8000}
+
+  printf "Description (optional): "
+  read -r DESC
+
+  # create site directory
+  mkdir -p "$SITE_DIR"
+
+  # create default index.html
+  cat > "$SITE_DIR/index.html" <<EOF
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>$NAME</title>
+</head>
+<body>
+  <h1>$NAME</h1>
+  <p>Local site created by asec-server-cli</p>
+</body>
+</html>
+EOF
+
+  echo
+  echo "Starting local web server..."
+  echo
+
+  cd "$SITE_DIR" || return
+  python3 -m http.server "$PORT" >/dev/null 2>&1 &
+  PID=$!
+
+  echo "$NAME|$PORT|$SITE_DIR|$PID|$DESC" >> "$LOCAL_DB"
+
+  echo "Local server started"
+  echo "--------------------"
+  echo "Name        : $NAME"
+  echo "Directory   : $SITE_DIR"
+  echo "Port        : $PORT"
+  echo "URL         : http://localhost:$PORT"
+  [ -n "$DESC" ] && echo "Description : $DESC"
+  echo
+}
+
+asec_local_list() {
+  if [ ! -s "$LOCAL_DB" ]; then
+    echo
+    echo "No local servers running"
+    echo
+    return
+  fi
+
+  echo
+  echo "ACTIVE LOCAL SERVERS"
+  echo "----------------------------------------------------------"
+  printf "%-12s %-6s %-20s %-8s %s\n" "NAME" "PORT" "DIR" "PID" "DESCRIPTION"
+  echo "----------------------------------------------------------"
+
+  while IFS="|" read -r NAME PORT DIR PID DESC; do
+    if kill -0 "$PID" 2>/dev/null; then
+      printf "%-12s %-6s %-20s %-8s %s\n" \
+        "$NAME" "$PORT" "$(basename "$DIR")" "$PID" "$DESC"
+    fi
+  done < "$LOCAL_DB"
+
+  echo "----------------------------------------------------------"
+  echo
+}
