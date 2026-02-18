@@ -1,0 +1,61 @@
+#!/bin/sh
+
+ASEC_ROOT="$(cd "$(dirname "$0")" && pwd)"
+
+# Module laden
+. "$ASEC_ROOT/core/system.sh"
+. "$ASEC_ROOT/core/monitor.sh"
+. "$ASEC_ROOT/core/local.sh"
+
+clear
+
+draw_ui() {
+  clear
+  echo "==============================================="
+  echo "        ASEC SERVER CLI  (interactive)"
+  echo "==============================================="
+  echo
+  echo "Commands:"
+  echo "  /help        show commands"
+  echo "  /system      system status"
+  echo "  /monitor     live system monitor"
+  echo "  /local       start local web server"
+  echo "  /locallist   list local servers"
+  echo "  /exit        exit"
+  echo
+}
+
+draw_ui
+
+while true; do
+  printf "asec> "
+  read -r CMD
+
+  case "$CMD" in
+    "/help")
+      draw_ui
+      ;;
+    "/system")
+      asec_system_status
+      ;;
+    "/monitor")
+      asec_monitor
+      draw_ui
+      ;;
+    "/local")
+      asec_local_start
+      ;;
+    "/locallist")
+      asec_local_list
+      ;;
+    "/exit")
+      echo "bye 👋"
+      exit 0
+      ;;
+    "")
+      ;;
+    *)
+      echo "unknown command"
+      ;;
+  esac
+done
