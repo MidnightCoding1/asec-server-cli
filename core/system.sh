@@ -1,41 +1,34 @@
 asec_system_status() {
-  echo "┌──────────────────────────────┐"
-  echo "│ ASEC SYSTEM STATUS           │"
-  echo "├───────────────┬──────────────┤"
+  color() {
+    [ "$1" -lt 50 ] && printf "\033[32m%s\033[0m" "$2" ||
+    [ "$1" -lt 80 ] && printf "\033[33m%s\033[0m" "$2" ||
+    printf "\033[31m%s\033[0m" "$2"
+  }
 
   CPU_LOAD=$(uptime | awk -F'load average:' '{print $2}' | cut -d',' -f1 | sed 's/^ //')
 
   RAM_TOTAL=$(free -m | awk '/Mem:/ {print $2}')
   RAM_USED=$(free -m | awk '/Mem:/ {print $3}')
+  RAM_PCT=$((RAM_USED * 100 / RAM_TOTAL))
 
   STATS=$(df -m . | tail -1)
-  ST_TOTAL=$(echo "$STATS" | awk '{print $2}')
-  ST_USED=$(echo "$STATS" | awk '{print $3}')
   ST_FREE=$(echo "$STATS" | awk '{print $4}')
-  ST_PCT=$(awk "BEGIN {printf \"%.2f\", ($ST_USED/$ST_TOTAL)*100}")
+  ST_TOTAL=$(echo "$STATS" | awk '{print $2}')
+  ST_PCT=$((100 - (ST_FREE * 100 / ST_TOTAL)))
 
+  BAT_CAP="n/a"
   if [ -d "/sys/class/power_supply" ]; then
     BAT=$(ls /sys/class/power_supply 2>/dev/null | grep -E "BAT|battery" | head -n1)
-    if [ -n "$BAT" ]; then
-      BAT_CAP=$(cat /sys/class/power_supply/$BAT/capacity)
-      BAT_STAT=$(cat /sys/class/power_supply/$BAT/status | cut -c1-5)
-    else
-      BAT_CAP="n/a"
-      BAT_STAT=""
-    fi
-  else
-    BAT_CAP="n/a"
-    BAT_STAT=""
+    [ -n "$BAT" ] && BAT_CAP=$(cat /sys/class/power_supply/$BAT/capacity)
   fi
 
   IP_LOCAL=$(ip addr 2>/dev/null | awk '/inet / && !/127.0.0.1/ {print $2}' | head -n1)
 
-  printf "│ %-13s │ %-12s │\n" "CPU Load" "$CPU_LOAD"
-  printf "│ %-13s │ %-12s │\n" "RAM Usage" "$RAM_USED / ${RAM_TOTAL}MB"
-  printf "│ %-13s │ %-12s │\n" "Storage Free" "$ST_FREE MB"
-  printf "│ %-13s │ %-12s │\n" "Storage Used" "$ST_PCT %"
-  printf "│ %-13s │ %-12s │\n" "Battery" "$BAT_CAP% $BAT_STAT"
-  printf "│ %-13s │ %-12s │\n" "IP Address" "${IP_LOCAL:-n/a}"
-
-  echo "└───────────────┴──────────────┘"
+  echo "┌──────────────────── SYSTEM STATUS ────────────────────┐"
+  printf "│ CPU Load     : %-37s │\n" "$CPU_LOAD"
+  printf "│ RAM Usage    : "; color "$RAM_PCT" "$RAM_USED / ${RAM_TOTAL}MB ($RAM_PCT%)"; echo " │"
+  printf "│ Storage Free : "; color "$ST_PCT" "$ST_FREE MB"; echo " │"
+  printf "│ Battery      : %-37s │\n" "$BAT_CAP%"
+  printf "│ IP Address   : %-37s │\n" "${IP_LOCAL:-n/a}"
+  echo "└───────────────────────────────────────────────────────┘"
 }
